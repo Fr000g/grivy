@@ -1,0 +1,22 @@
+[project]
+name = "grivy"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "python-dotenv>=1.0.0",
+    "langchain>=1.0.8",
+    "langchain-openai>=1.1.0",
+    "pydantic>=2.7.0",
+]
+
+[project.scripts]
+grivy = "grivy.cli.main:main"
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
