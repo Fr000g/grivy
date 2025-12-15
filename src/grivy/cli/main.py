@@ -5,9 +5,14 @@ from typing import cast
 from dotenv import load_dotenv
 from langchain_core.runnables import RunnableConfig
 from langchain_openai import ChatOpenAI
+from prompt_toolkit import PromptSession
+from prompt_toolkit.formatted_text import ANSI
+from prompt_toolkit.history import InMemoryHistory
+from prompt_toolkit.patch_stdout import patch_stdout
 
 from grivy.agents.agent import build_agent
 from grivy.tools.trivy_tools import get_tools
+from grivy.cli.style import color_text
 
 
 def build_llm(model: str, temperature: float = 0):
@@ -30,6 +35,13 @@ def main():
     llm = build_llm(args.model)
     agent = build_agent(llm, tools)
 
+    # CLI intput prompt session，not related with LangChain session
+    session = PromptSession(
+        history=InMemoryHistory(),
+        # 默认开启行编辑能力，支持 Backspace/方向键/HOME/END 等常见按键
+        prompt_continuation=lambda *_: "",
+    )
+
     config = cast(RunnableConfig, {"configurable": {"thread_id": "local-cli"}})
 
     print("欢迎使用 Trivy Agent，对话输入需求，输入 'exit' 退出。")
@@ -40,16 +52,23 @@ def main():
     print("  - 扫描 SBOM：'扫描 sbom.json 文件'")
     print("  - 获取帮助：'你能做什么？' 或 '帮助'\n")
 
+    user_label = color_text("你", "peach")
+    agent_label = color_text("Agent", "lavender")
+
     while True:
         try:
-            user_input = input("\n你: ").strip()
+            # 使用 prompt_toolkit 提供的增强输入，兼容多种终端的光标/删除键行为
+            with patch_stdout():
+                # 使用 ANSI 封装，确保 prompt_toolkit 正确解析颜色转义序列
+                user_input = session.prompt(ANSI(f"\n{user_label}: ")).strip()
             if user_input.lower() in {"exit", "quit", "q"}:
                 print("\n再见！")
                 break
             if not user_input:
                 continue
 
-            print("\nAgent: ", end="", flush=True)
+            # 直接进入 Agent 输出，不重复回显用户输入
+            print(f"\n{agent_label}: ", end="", flush=True)
 
             import asyncio
 

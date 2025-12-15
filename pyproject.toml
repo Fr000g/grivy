@@ -9,6 +9,7 @@ dependencies = [
     "langchain>=1.0.8",
     "langchain-openai>=1.1.0",
     "pydantic>=2.7.0",
+    "prompt-toolkit>=3.0.43",
 ]
 
 [project.scripts]

@@ -7,6 +7,7 @@ from langchain.tools import tool
 from pydantic import BaseModel, Field, validator
 
 from grivy.cli.output_handler import summarize_report
+from grivy.cli.style import dim_text
 
 # 这里的 Tool 直接调用本地 Trivy CLI，并在 Python 内部做摘要，避免把大 JSON 回传给 LLM。
 
@@ -83,7 +84,7 @@ def _stream_run(cmd: list, timeout: int) -> int:
     以流式方式运行子进程，把 stdout/stderr 直接打印到控制台，防止长时间无输出。
     返回退出码。
     """
-    print(f"[trivy] 执行命令: {' '.join(cmd)}")
+    print(dim_text(f"[trivy] 执行命令: {' '.join(cmd)}"))
     try:
         proc = subprocess.Popen(
             cmd,
@@ -93,20 +94,20 @@ def _stream_run(cmd: list, timeout: int) -> int:
             bufsize=1,
         )
     except FileNotFoundError:
-        print("[trivy] 未找到 trivy 可执行文件，请确认已安装并在 PATH 中。")
+        print(dim_text("[trivy] 未找到 trivy 可执行文件，请确认已安装并在 PATH 中。"))
         return -127
 
     start = time.time()
     try:
         for line in proc.stdout or []:
-            print(line.rstrip())
+            print(dim_text(line.rstrip()))
             if timeout and (time.time() - start) > timeout:
                 proc.kill()
                 raise subprocess.TimeoutExpired(cmd, timeout)
         proc.wait(timeout=max(1, timeout - int(time.time() - start)))
     except subprocess.TimeoutExpired:
         proc.kill()
-        print(f"[trivy] 扫描超时（>{timeout}s）")
+        print(dim_text(f"[trivy] 扫描超时（>{timeout}s）"))
         return -1
     return proc.returncode
 
